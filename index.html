@@ -1,0 +1,2721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AUTO_RAG - Autonomous Retrieval-Augmented Generation System</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --accent-color: #3b82f6;
+            --text-primary: #1f2937;
+            --text-secondary: #6b7280;
+            --bg-primary: #ffffff;
+            --bg-secondary: #f9fafb;
+            --bg-tertiary: #f3f4f6;
+            --border-color: #e5e7eb;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --error-color: #ef4444;
+            --code-bg: #1f2937;
+            --code-text: #f3f4f6;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            line-height: 1.6;
+            color: var(--text-primary);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        /* Navigation */
+        .nav-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .nav-container.scrolled {
+            background: rgba(255, 255, 255, 0.98);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        nav {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+        }
+
+        .nav-container {
+            position: relative;
+        }
+
+        .nav-wrapper {
+            flex: 1;
+            overflow-x: auto;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(37, 99, 235, 0.3) transparent;
+            margin: 0 -1rem;
+            padding: 0 1rem;
+        }
+
+        .nav-wrapper::-webkit-scrollbar {
+            height: 4px;
+        }
+
+        .nav-wrapper::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .nav-wrapper::-webkit-scrollbar-thumb {
+            background: rgba(37, 99, 235, 0.3);
+            border-radius: 2px;
+        }
+
+        .nav-wrapper::-webkit-scrollbar-thumb:hover {
+            background: rgba(37, 99, 235, 0.5);
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .logo i {
+            font-size: 1.8rem;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 0.5rem;
+            list-style: none;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 0.5rem;
+            border-radius: 50px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            min-width: max-content;
+            white-space: nowrap;
+        }
+
+        .nav-links a {
+            color: var(--text-primary);
+            text-decoration: none;
+            font-weight: 500;
+            position: relative;
+            padding: 0.6rem 1rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            background: transparent;
+            border: 2px solid transparent;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .nav-links a:hover {
+            color: var(--primary-color);
+            background: rgba(37, 99, 235, 0.08);
+            border-color: rgba(37, 99, 235, 0.15);
+        }
+
+        .nav-links a.active {
+            color: white;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            border-color: transparent;
+        }
+
+        .mobile-menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--text-primary);
+            cursor: pointer;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-top: 80px;
+            padding: 2rem;
+            max-width: 1200px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Slide Container */
+        .slide-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+            margin-bottom: 2rem;
+            animation: slideUp 0.6s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .slide-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .slide-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: pulse 4s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.1); opacity: 0.3; }
+        }
+
+        .slide-number {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .slide-title {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .slide-subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            position: relative;
+            z-index: 1;
+        }
+
+        .slide-content {
+            padding: 2rem;
+        }
+
+        /* Typography */
+        h1, h2, h3, h4, h5, h6 {
+            margin-bottom: 1rem;
+            font-weight: 600;
+            line-height: 1.3;
+        }
+
+        h1 { font-size: 2.5rem; color: var(--primary-color); }
+        h2 { font-size: 2rem; color: var(--text-primary); margin-top: 2rem; }
+        h3 { font-size: 1.5rem; color: var(--text-primary); margin-top: 1.5rem; }
+        h4 { font-size: 1.2rem; color: var(--text-primary); }
+
+        p {
+            margin-bottom: 1rem;
+            color: var(--text-secondary);
+        }
+
+        /* Lists */
+        ul, ol {
+            margin-bottom: 1rem;
+            padding-left: 1.5rem;
+        }
+
+        li {
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        th, td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            background: var(--bg-tertiary);
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        tr:hover {
+            background: var(--bg-secondary);
+        }
+
+        /* Code Blocks */
+        pre {
+            background: var(--code-bg);
+            color: var(--code-text);
+            padding: 1.5rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 1.5rem 0;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            position: relative;
+        }
+
+        pre::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+        }
+
+        code {
+            background: var(--bg-tertiary);
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.9rem;
+        }
+
+        pre code {
+            background: none;
+            padding: 0;
+        }
+
+        /* Blockquotes */
+        blockquote {
+            border-left: 4px solid var(--primary-color);
+            padding-left: 1.5rem;
+            margin: 1.5rem 0;
+            font-style: italic;
+            color: var(--text-secondary);
+        }
+
+        /* Feature Grid */
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .feature-card {
+            background: var(--bg-secondary);
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border-color: var(--primary-color);
+        }
+
+        .feature-icon {
+            font-size: 2rem;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        .feature-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        /* Diagram Container */
+        .diagram-container {
+            background: var(--bg-secondary);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            padding: 2rem;
+            margin: 2rem 0;
+            overflow-x: auto;
+            position: relative;
+        }
+
+        .diagram {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.8rem;
+            line-height: 1.4;
+            white-space: pre;
+            color: var(--text-primary);
+        }
+
+        /* Enhanced Module Diagram */
+        .module-diagram {
+            position: relative;
+            min-height: 600px;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            border-radius: 20px;
+            padding: 2rem;
+            overflow: hidden;
+        }
+
+        .module-flow {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin: 2rem 0;
+            position: relative;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .module-flow::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 5%;
+            right: 5%;
+            height: 4px;
+            background: linear-gradient(90deg, 
+                #3b82f6 0%, 
+                #8b5cf6 25%, 
+                #ec4899 50%, 
+                #f59e0b 75%, 
+                #10b981 100%);
+            z-index: 1;
+            transform: translateY(-50%);
+            border-radius: 2px;
+        }
+
+        .module-item {
+            background: white;
+            border: 3px solid transparent;
+            border-radius: 15px;
+            padding: 1.5rem;
+            min-width: 180px;
+            text-align: center;
+            position: relative;
+            z-index: 2;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            animation: moduleSlideIn 0.8s ease-out forwards;
+            opacity: 0;
+        }
+
+        .module-item:nth-child(1) { animation-delay: 0.1s; border-color: #3b82f6; }
+        .module-item:nth-child(2) { animation-delay: 0.2s; border-color: #8b5cf6; }
+        .module-item:nth-child(3) { animation-delay: 0.3s; border-color: #ec4899; }
+        .module-item:nth-child(4) { animation-delay: 0.4s; border-color: #f59e0b; }
+
+        @keyframes moduleSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px) scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .module-item:hover {
+            transform: translateY(-8px) scale(1.05);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .module-item:hover .module-icon {
+            transform: scale(1.2) rotate(5deg);
+        }
+
+        .module-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.8rem;
+            margin: 0 auto 1rem auto;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .module-icon::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 70%);
+            animation: iconPulse 3s ease-in-out infinite;
+        }
+
+        @keyframes iconPulse {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+
+        .module-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: var(--text-primary);
+            margin-bottom: 0.8rem;
+        }
+
+        .module-features {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .module-features ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .module-features li {
+            padding: 0.3rem 0;
+            border-bottom: 1px solid var(--border-color);
+            transition: all 0.2s ease;
+        }
+
+        .module-features li:last-child {
+            border-bottom: none;
+        }
+
+        .module-features li:hover {
+            color: var(--primary-color);
+            padding-left: 0.5rem;
+        }
+
+        .secondary-modules {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-top: 3rem;
+        }
+
+        .secondary-module {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            animation: secondaryFadeIn 0.8s ease-out forwards;
+            opacity: 0;
+        }
+
+        .secondary-module:nth-child(1) { animation-delay: 0.5s; }
+        .secondary-module:nth-child(2) { animation-delay: 0.6s; }
+        .secondary-module:nth-child(3) { animation-delay: 0.7s; }
+        .secondary-module:nth-child(4) { animation-delay: 0.8s; }
+
+        @keyframes secondaryFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .secondary-module::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+        }
+
+        .secondary-module:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12);
+        }
+
+        .secondary-module-icon {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .secondary-module:hover .secondary-module-icon {
+            transform: scale(1.1) rotate(-5deg);
+        }
+
+        .secondary-module-title {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .secondary-module-desc {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .connection-indicator {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 40px;
+            height: 40px;
+            background: white;
+            border: 3px solid var(--primary-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3;
+            font-size: 1.2rem;
+            color: var(--primary-color);
+            animation: connectionPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes connectionPulse {
+            0%, 100% { 
+                box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
+                transform: translate(-50%, -50%) scale(1);
+            }
+            50% { 
+                box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
+                transform: translate(-50%, -50%) scale(1.1);
+            }
+        }
+        .architecture-diagram {
+            position: relative;
+            min-height: 600px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 20px;
+            padding: 2rem;
+            overflow: hidden;
+        }
+
+        .arch-layer {
+            position: relative;
+            margin-bottom: 2rem;
+            animation: fadeInUp 0.8s ease-out forwards;
+            opacity: 0;
+        }
+
+        .arch-layer:nth-child(1) { animation-delay: 0.2s; }
+        .arch-layer:nth-child(2) { animation-delay: 0.4s; }
+        .arch-layer:nth-child(3) { animation-delay: 0.6s; }
+        .arch-layer:nth-child(4) { animation-delay: 0.8s; }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .arch-box {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .arch-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .arch-box:hover::before {
+            left: 100%;
+        }
+
+        .arch-box:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .arch-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .arch-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.2rem;
+        }
+
+        .arch-content {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .arch-component {
+            flex: 1;
+            min-width: 200px;
+            background: var(--bg-secondary);
+            padding: 1rem;
+            border-radius: 10px;
+            border-left: 4px solid var(--primary-color);
+            transition: all 0.3s ease;
+        }
+
+        .arch-component:hover {
+            background: var(--bg-tertiary);
+            border-left-color: var(--accent-color);
+            transform: translateX(5px);
+        }
+
+        .arch-component-title {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .arch-component-desc {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+
+        .arch-arrow {
+            text-align: center;
+            margin: 1rem 0;
+            position: relative;
+            color: var(--primary-color);
+            font-size: 1.5rem;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-10px); }
+            60% { transform: translateY(-5px); }
+        }
+
+        .arch-flow {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            margin: 2rem 0;
+            position: relative;
+        }
+
+        .arch-flow::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 10%;
+            right: 10%;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+            z-index: 1;
+            transform: translateY(-50%);
+        }
+
+        .flow-item {
+            background: white;
+            border: 3px solid var(--primary-color);
+            border-radius: 15px;
+            padding: 1rem;
+            min-width: 150px;
+            text-align: center;
+            position: relative;
+            z-index: 2;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .flow-item:hover {
+            transform: scale(1.1);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .flow-item-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .flow-item-title {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .data-storage {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-top: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .data-storage::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: rotate 20s linear infinite;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .storage-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            position: relative;
+            z-index: 2;
+        }
+
+        .storage-item {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            padding: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .storage-item:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-3px);
+        }
+
+        .storage-icon {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .storage-title {
+            font-weight: 600;
+            margin-bottom: 0.3rem;
+        }
+
+        .storage-desc {
+            font-size: 0.8rem;
+            opacity: 0.9;
+        }
+
+        /* Workflow Steps */
+        .workflow {
+            margin: 2rem 0;
+        }
+
+        .step {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            border-left: 4px solid var(--primary-color);
+            transition: all 0.3s ease;
+        }
+
+        .step:hover {
+            transform: translateX(5px);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .step-number {
+            background: var(--primary-color);
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            margin-right: 1rem;
+            flex-shrink: 0;
+        }
+
+        .step-content {
+            flex: 1;
+        }
+
+        .step-title {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        /* Tech Stack */
+        .tech-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+
+        .tech-item {
+            background: linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary));
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+
+        .tech-item:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .tech-name {
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 0.25rem;
+        }
+
+        .tech-description {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            background: var(--primary-color);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        .btn:hover {
+            background: var(--secondary-color);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(37, 99, 235, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-secondary);
+            border-color: var(--primary-color);
+        }
+
+        /* Scroll to Top */
+        .scroll-to-top {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: var(--primary-color);
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .scroll-to-top.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .scroll-to-top:hover {
+            background: var(--secondary-color);
+            transform: translateY(-5px);
+        }
+
+        /* Footer */
+        footer {
+            background: white;
+            padding: 2rem;
+            text-align: center;
+            margin-top: 4rem;
+            border-radius: 20px 20px 0 0;
+            box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .footer-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .footer-links a:hover {
+            color: var(--primary-color);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .nav-wrapper {
+                overflow: visible;
+                margin: 0;
+                padding: 0;
+            }
+
+            .nav-links {
+                display: none;
+                position: absolute;
+                top: 100%;
+                left: 1rem;
+                right: 1rem;
+                background: rgba(255, 255, 255, 0.95);
+                backdrop-filter: blur(20px);
+                flex-direction: column;
+                padding: 1rem;
+                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+                border-radius: 20px;
+                border: 1px solid rgba(255, 255, 255, 0.3);
+                gap: 0.5rem;
+                transform: translateY(-10px);
+                opacity: 0;
+                transition: all 0.3s ease;
+                min-width: auto;
+                white-space: normal;
+            }
+
+            .nav-links.active {
+                display: flex;
+                transform: translateY(0);
+                opacity: 1;
+            }
+
+            .nav-links a {
+                padding: 1rem;
+                text-align: center;
+                border-radius: 15px;
+                font-size: 1rem;
+                white-space: nowrap;
+            }
+
+            .nav-links a:hover {
+                transform: scale(1.02);
+            }
+
+            .nav-links a.active {
+                transform: scale(1.02);
+            }
+
+            .mobile-menu-toggle {
+                display: block;
+            }
+
+            .main-content {
+                padding: 1rem;
+            }
+
+            .slide-content {
+                padding: 1rem;
+            }
+
+            .slide-title {
+                font-size: 1.5rem;
+            }
+
+            h1 { font-size: 2rem; }
+            h2 { font-size: 1.5rem; }
+            h3 { font-size: 1.2rem; }
+
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .tech-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .step {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .step-number {
+                margin: 0 auto 1rem auto;
+            }
+
+            table {
+                font-size: 0.9rem;
+            }
+
+            th, td {
+                padding: 0.5rem;
+            }
+        }
+
+        /* Loading Animation */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Highlight Animation */
+        .highlight {
+            background: linear-gradient(120deg, #f6d365 0%, #fda085 100%);
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            animation: highlight 2s ease-in-out;
+        }
+
+        @keyframes highlight {
+            0% { background: transparent; }
+            50% { background: linear-gradient(120deg, #f6d365 0%, #fda085 100%); }
+            100% { background: transparent; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <div class="nav-container" id="navbar">
+        <nav>
+            <a href="#" class="logo">
+                <i class="fas fa-brain"></i>
+                AUTO_RAG
+            </a>
+            <div class="nav-wrapper">
+                <ul class="nav-links" id="navLinks">
+                    <li><a href="#slide1">Title</a></li>
+                    <li><a href="#slide2">Overview</a></li>
+                    <li><a href="#slide3">Architecture</a></li>
+                    <li><a href="#slide4">Modules</a></li>
+                    <li><a href="#slide5">Workflow</a></li>
+                    <li><a href="#slide6">Functions</a></li>
+                    <li><a href="#slide7">Pipeline</a></li>
+                    <li><a href="#slide8">Experiments</a></li>
+                    <li><a href="#slide9">API</a></li>
+                    <li><a href="#slide10">Storage</a></li>
+                    <li><a href="#slide11">Performance</a></li>
+                    <li><a href="#slide12">Tech Stack</a></li>
+                    <li><a href="#slide13">Getting Started</a></li>
+                    <li><a href="#slide14">Summary</a></li>
+                </ul>
+            </div>
+            <button class="mobile-menu-toggle" id="mobileMenuToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- SLIDE 1: Title Slide -->
+        <div class="slide-container" id="slide1">
+            <div class="slide-header">
+                <div class="slide-number">SLIDE 1</div>
+                <div class="slide-title">AUTO_RAG</div>
+                <div class="slide-subtitle">Autonomous Retrieval-Augmented Generation System</div>
+            </div>
+            <div class="slide-content">
+                <h1>Intelligent Document Q&A with Automated Optimization</h1>
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">📄</div>
+                        <div class="feature-title">Document Intelligence</div>
+                        <p>Smart document processing and indexing with multi-format support</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🔍</div>
+                        <div class="feature-title">Hybrid Search</div>
+                        <p>Vector similarity combined with keyword matching for optimal retrieval</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🤖</div>
+                        <div class="feature-title">LLM Generation</div>
+                        <p>Context-aware answer generation with multiple model options</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">⚡</div>
+                        <div class="feature-title">Auto-Optimization</div>
+                        <p>Self-tuning system for optimal performance and accuracy</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 2: What is AUTO_RAG? -->
+        <div class="slide-container" id="slide2">
+            <div class="slide-header">
+                <div class="slide-number">SLIDE 2</div>
+                <div class="slide-title">What is AUTO_RAG?</div>
+                <div class="slide-subtitle">Core Concept and Key Capabilities</div>
+            </div>
+            <div class="slide-content">
+                <h2>Core Concept</h2>
+                <p>AUTO_RAG is an advanced <strong>RAG (Retrieval-Augmented Generation)</strong> system that combines:</p>
+                <div class="workflow">
+                    <div class="step">
+                        <div class="step-number">📄</div>
+                        <div class="step-content">
+                            <div class="step-title">Document Intelligence</div>
+                            <p>Smart document processing and indexing with support for multiple formats</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">🔍</div>
+                        <div class="step-content">
+                            <div class="step-title">Hybrid Search</div>
+                            <p>Vector similarity + Keyword matching with advanced fusion algorithms</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">🤖</div>
+                        <div class="step-content">
+                            <div class="step-title">LLM Generation</div>
+                            <p>Context-aware answer generation using state-of-the-art language models</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">⚡</div>
+                        <div class="step-content">
+                            <div class="step-title">Auto-Optimization</div>
+                            <p>Self-tuning mechanisms for optimal performance and accuracy</p>
+                        </div>
+                    </div>
+                </div>
+
+                <h2>Key Capabilities</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Feature</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Multi-format Support</strong></td>
+                            <td>PDF, DOCX, TXT, HTML, CSV, JSON</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Hybrid Retrieval</strong></td>
+                            <td>Semantic + Keyword search with RRF fusion</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Multiple LLMs</strong></td>
+                            <td>Local (Ollama) + Cloud (OpenAI)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Web Interface</strong></td>
+                            <td>Modern React-based dashboard</td>
+                        </tr>
+                        <tr>
+                            <td><strong>CLI Tool</strong></td>
+                            <td>Interactive command-line interface</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- SLIDE 3: System Architecture Diagram -->
+        <div class="slide-container" id="slide3">
+            <div class="slide-header">
+                <div class="slide-number">SLIDE 3</div>
+                <div class="slide-title">System Architecture Diagram</div>
+                <div class="slide-subtitle">Complete System Overview</div>
+            </div>
+            <div class="slide-content">
+                <div class="architecture-diagram">
+                    <!-- User Interface Layer -->
+                    <div class="arch-layer">
+                        <div class="arch-box">
+                            <div class="arch-title">
+                                <div class="arch-icon">🖥️</div>
+                                User Interface Layer
+                            </div>
+                            <div class="arch-flow">
+                                <div class="flow-item">
+                                    <div class="flow-item-icon">⚛️</div>
+                                    <div class="flow-item-title">React Frontend</div>
+                                    <div style="font-size: 0.8rem; color: var(--text-secondary);">Port 3000</div>
+                                </div>
+                                <div class="flow-item">
+                                    <div class="flow-item-icon">💻</div>
+                                    <div class="flow-item-title">CLI Interface</div>
+                                    <div style="font-size: 0.8rem; color: var(--text-secondary);">Terminal</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="arch-arrow">
+                            <i class="fas fa-arrow-down"></i>
+                        </div>
+                    </div>
+
+                    <!-- API Layer -->
+                    <div class="arch-layer">
+                        <div class="arch-box">
+                            <div class="arch-title">
+                                <div class="arch-icon">🔌</div>
+                                API Gateway Layer
+                            </div>
+                            <div class="arch-content">
+                                <div class="arch-component">
+                                    <div class="arch-component-title">FastAPI Server</div>
+                                    <div class="arch-component-desc">RESTful API with async support, automatic documentation, and request validation</div>
+                                </div>
+                                <div class="arch-component">
+                                    <div class="arch-component-title">Authentication</div>
+                                    <div class="arch-component-desc">JWT-based authentication and authorization system</div>
+                                </div>
+                                <div class="arch-component">
+                                    <div class="arch-component-title">Rate Limiting</div>
+                                    <div class="arch-component-desc">Request throttling and DDoS protection</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="arch-arrow">
+                            <i class="fas fa-arrow-down"></i>
+                        </div>
+                    </div>
+
+                    <!-- Core Processing Layer -->
+                    <div class="arch-layer">
+                        <div class="arch-box">
+                            <div class="arch-title">
+                                <div class="arch-icon">⚙️</div>
+                                RAG Core Engine
+                            </div>
+                            <div class="arch-content">
+                                <div class="arch-component">
+                                    <div class="arch-component-title">📄 Document Processing</div>
+                                    <div class="arch-component-desc">
+                                        <strong>loader.py:</strong> Multi-format document extraction<br>
+                                        <strong>chunking.py:</strong> Intelligent text segmentation<br>
+                                        <strong>embedding.py:</strong> Vector generation with caching
+                                    </div>
+                                </div>
+                                <div class="arch-component">
+                                    <div class="arch-component-title">🔍 Retrieval System</div>
+                                    <div class="arch-component-desc">
+                                        <strong>vectordb.py:</strong> FAISS vector database<br>
+                                        <strong>keyword_index.py:</strong> BM25 search<br>
+                                        <strong>hybrid_retrieval.py:</strong> Fusion algorithms
+                                    </div>
+                                </div>
+                                <div class="arch-component">
+                                    <div class="arch-component-title">🤖 Generation Engine</div>
+                                    <div class="arch-component-desc">
+                                        <strong>reranker.py:</strong> BGE reranking<br>
+                                        <strong>model_mgr.py:</strong> LLM management<br>
+                                        <strong>logic.py:</strong> Core orchestration
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="arch-arrow">
+                            <i class="fas fa-arrow-down"></i>
+                        </div>
+                    </div>
+
+                    <!-- Data Storage Layer -->
+                    <div class="arch-layer">
+                        <div class="data-storage">
+                            <div class="arch-title" style="color: white;">
+                                <div class="arch-icon" style="background: rgba(255,255,255,0.2);">💾</div>
+                                Data Storage Layer
+                            </div>
+                            <div class="storage-grid">
+                                <div class="storage-item">
+                                    <div class="storage-icon">📁</div>
+                                    <div class="storage-title">Documents</div>
+                                    <div class="storage-desc">User-uploaded source files in various formats</div>
+                                </div>
+                                <div class="storage-item">
+                                    <div class="storage-icon">🗄️</div>
+                                    <div class="storage-title">Vector Database</div>
+                                    <div class="storage-desc">FAISS index with embeddings and metadata</div>
+                                </div>
+                                <div class="storage-item">
+                                    <div class="storage-icon">⚡</div>
+                                    <div class="storage-title">Cache System</div>
+                                    <div class="storage-desc">Embedding and reranking caches for performance</div>
+                                </div>
+                                <div class="storage-item">
+                                    <div class="storage-icon">📊</div>
+                                    <div class="storage-title">Results</div>
+                                    <div class="storage-desc">Experiment results and performance metrics</div>
+                                </div>
+                                <div class="storage-item">
+                                    <div class="storage-icon">🧪</div>
+                                    <div class="storage-title">Evaluation</div>
+                                    <div class="storage-desc">Test datasets and benchmark queries</div>
+                                </div>
+                                <div class="storage-item">
+                                    <div class="storage-icon">📝</div>
+                                    <div class="storage-title">Logs</div>
+                                    <div class="storage-desc">System logs and debugging information</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 4: Core Module Structure -->
+        <div class="slide-container" id="slide4">
+            <div class="slide-header">
+                <div class="slide-number">SLIDE 4</div>
+                <div class="slide-title">Core Module Structure</div>
+                <div class="slide-subtitle">RAG_Logic/src/ Modules Overview</div>
+            </div>
+            <div class="slide-content">
+                <div class="module-diagram">
+                    <!-- Primary Processing Pipeline -->
+                    <h3 style="text-align: center; color: var(--primary-color); margin-bottom: 2rem; font-size: 1.5rem;">
+                        🔄 Primary Processing Pipeline
+                    </h3>
+                    
+                    <div class="module-flow">
+                        <div class="module-item">
+                            <div class="module-icon">📄</div>
+                            <div class="module-title">loader.py</div>
+                            <div class="module-features">
+                                <ul>
+                                    <li>📋 PDF Processing</li>
+                                    <li>📝 DOCX Parser</li>
+                                    <li>📄 TXT Reader</li>
+                                    <li>🌐 HTML Parser</li>
+                                    <li>📊 CSV/JSON Support</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="connection-indicator">→</div>
+
+                        <div class="module-item">
+                            <div class="module-icon">✂️</div>
+                            <div class="module-title">chunking.py</div>
+                            <div class="module-features">
+                                <ul>
+                                    <li>📏 Smart Splitting</li>
+                                    <li>🔄 Overlap Control</li>
+                                    <li>📋 Metadata Preservation</li>
+                                    <li>⚡ Batch Processing</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="connection-indicator">→</div>
+
+                        <div class="module-item">
+                            <div class="module-icon">🧮</div>
+                            <div class="module-title">embedding.py</div>
+                            <div class="module-features">
+                                <ul>
+                                    <li>🔤 Sentence Transformers</li>
+                                    <li>🚀 Batch Encoding</li>
+                                    <li>💾 Smart Caching</li>
+                                    <li>⚡ GPU Acceleration</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="connection-indicator">→</div>
+
+                        <div class="module-item">
+                            <div class="module-icon">🗄️</div>
+                            <div class="module-title">vectordb.py</div>
+                            <div class="module-features">
+                                <ul>
+                                    <li>🔍 FAISS Integration</li>
+                                    <li>📐 Cosine Similarity</li>
+                                    <li>💾 Persistent Storage</li>
+                                    <li>⚡ Fast Retrieval</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Secondary Processing Modules -->
+                    <h3 style="text-align: center; color: var(--primary-color); margin: 3rem 0 2rem 0; font-size: 1.5rem;">
+                        ⚡ Advanced Processing Modules
+                    </h3>
+                    
+                    <div class="secondary-modules">
+                        <div class="secondary-module">
+                            <div class="secondary-module-icon">🔑</div>
+                            <div class="secondary-module-title">keyword_index.py</div>
+                            <div class="secondary-module-desc">
+                                <strong>BM25 Algorithm:</strong> Advanced keyword matching with TF-IDF scoring and term frequency analysis for precise document retrieval.
+                            </div>
+                        </div>
+
+                        <div class="secondary-module">
+                            <div class="secondary-module-icon">🔀</div>
+                            <div class="secondary-module-title">hybrid_retrieval.py</div>
+                            <div class="secondary-module-desc">
+                                <strong>Fusion Technology:</strong> Combines semantic and keyword search using advanced fusion algorithms for optimal relevance.
+                            </div>
+                        </div>
+
+                        <div class="secondary-module">
+                            <div class="secondary-module-icon">🎯</div>
+                            <div class="secondary-module-title">reranker.py</div>
+                            <div class="secondary-module-desc">
+                                <strong>BGE Reranking:</strong> Cross-encoder model for precise relevance scoring and result optimization.
+                            </div>
+                        </div>
+
+                        <div class="secondary-module">
+                            <div class="secondary-module-icon">🔄</div>
+                            <div class="secondary-module-title">rrf.py</div>
+                            <div class="secondary-module-desc">
+                                <strong>Reciprocal Rank Fusion:</strong> Advanced algorithm to combine multiple ranking systems into optimal results.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Feature Cards -->
+                    <div style="margin-top: 3rem;">
+                        <h3 style="text-align: center; color: var(--primary-color); margin-bottom: 2rem; font-size: 1.5rem;">
+                            🌟 Key Features & Capabilities
+                        </h3>
+                        
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
+                            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1.5rem; border-radius: 15px; transform: translateY(0); transition: all 0.3s ease; animation: fadeInUp 0.8s ease-out forwards; opacity: 0; animation-delay: 0.9s;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
+                                <div style="font-size: 2rem; margin-bottom: 1rem;">🚀</div>
+                                <h4 style="margin-bottom: 0.5rem;">High Performance</h4>
+                                <p style="font-size: 0.9rem; opacity: 0.9;">Optimized for speed with caching and GPU acceleration</p>
+                            </div>
+
+                            <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; padding: 1.5rem; border-radius: 15px; transform: translateY(0); transition: all 0.3s ease; animation: fadeInUp 0.8s ease-out forwards; opacity: 0; animation-delay: 1.0s;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
+                                <div style="font-size: 2rem; margin-bottom: 1rem;">🔧</div>
+                                <h4 style="margin-bottom: 0.5rem;">Modular Design</h4>
+                                <p style="font-size: 0.9rem; opacity: 0.9;">Clean architecture with interchangeable components</p>
+                            </div>
+
+                            <div style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; padding: 1.5rem; border-radius: 15px; transform: translateY(0); transition: all 0.3s ease; animation: fadeInUp 0.8s ease-out forwards; opacity: 0; animation-delay: 1.1s;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
+                                <div style="font-size: 2rem; margin-bottom: 1rem;">📊</div>
+                                <h4 style="margin-bottom: 0.5rem;">Scalable</h4>
+                                <p style="font-size: 0.9rem; opacity: 0.9;">Handles large document collections efficiently</p>
+                            </div>
+
+                            <div style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: white; padding: 1.5rem; border-radius: 15px; transform: translateY(0); transition: all 0.3s ease; animation: fadeInUp 0.8s ease-out forwards; opacity: 0; animation-delay: 1.2s;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
+                                <div style="font-size: 2rem; margin-bottom: 1rem;">🎯</div>
+                                <h4 style="margin-bottom: 0.5rem;">Accurate</h4>
+                                <p style="font-size: 0.9rem; opacity: 0.9;">Advanced retrieval and reranking for precision</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 5: Query Processing Workflow -->
+        <div class="slide-container" id="slide5">
+            <div class="slide-header">
+                <div class="slide-number">SLIDE 5</div>
+                <div class="slide-title">Query Processing Workflow</div>
+                <div class="slide-subtitle">End-to-End Query Processing Flow</div>
+            </div>
+            <div class="slide-content">
+                <div class="workflow">
+                    <div class="step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <div class="step-title">Query Input</div>
+                            <p>User submits query: "What is machine learning?"</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <div class="step-title">Hybrid Retrieval</div>
+                            <p><strong>Vector Search:</strong> Query embedding → Cosine similarity → Top-K = 10</p>
+                            <p><strong>Keyword Search:</strong> BM25 scoring → Term frequency → Top-K = 10</p>
+                            <p><strong>Fusion:</strong> Reciprocal Rank Fusion combines both results</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <div class="step-title">Reranking</div>
+                            <p>BGE Reranker Model (BAAI/bge-reranker-base)</p>
+                            <p>Cross-encoder scoring between query and each chunk</p>
+                            <p>Output: Top-3 most relevant chunks</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">4</div>
+                        <div class="step-content">
+                            <div class="step-title">Context Assembly</div>
+                            <p>Combine top chunks into context for LLM</p>
+                            <pre><code>Context = """
+[Source 1] Machine learning is a subset of AI...
+[Source 2] ML algorithms learn from data patterns...
+[Source 3] Common types: supervised, unsupervised, reinforcement...
+"""</code></pre>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">5</div>
+                        <div class="step-content">
+                            <div class="step-title">LLM Generation</div>
+                            <p><strong>Local Models:</strong> llama3, mistral, mixtral (via Ollama)</p>
+                            <p><strong>Cloud Models:</strong> gpt-3.5-turbo, gpt-4 (via OpenAI API)</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">6</div>
+                        <div class="step-content">
+                            <div class="step-title">Response</div>
+                            <pre><code>{
+  "answer": "Machine learning is a subset of artificial intelligence..",
+  "sources": ["doc1.pdf", "doc2.pdf"],
+  "confidence": 0.92,
+  "retrieval_time": 0.45,
+  "generation_time": 1.23
+}</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 6: Key Functions Deep Dive -->
+        <div class="slide-container" id="slide6">
+            <div class="slide-header">
+                <div class="slide-number">SLIDE 6</div>
+                <div class="slide-title">Key Functions Deep Dive</div>
+                <div class="slide-subtitle">Core Classes and Methods</div>
+            </div>
+            <div class="slide-content">
+                <h2>📄 logic.py - Core RAG System</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Class</th>
+                            <th>Function</th>
+                            <th>Parameters</th>
+                            <th>Returns</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>OptimizedEmbeddingService</code></td>
+                            <td><code>generate_embeddings()</code></td>
+                            <td><code>texts: List[str]</code></td>
+                            <td><code>np.ndarray</code></td>
+                            <td>Batch embedding with caching</td>
+                        </tr>
+                        <tr>
+                            <td><code>OptimizedEmbeddingService</code></td>
+                            <td><code>_get_model()</code></td>
+                            <td>None</td>
+                            <td><code>SentenceTransformer</code></td>
+                            <td>Lazy model loading</td>
+                        </tr>
+                        <tr>
+                            <td><code>OptimizedVectorDatabase</code></td>
+                            <td><code>build_index()</code></td>
+                            <td><code>embeddings, chunks</code></td>
+                            <td>None</td>
+                            <td>Build FAISS index</td>
+                        </tr>
+                        <tr>
+                            <td><code>OptimizedVectorDatabase</code></td>
+                            <td><code>search()</code></td>
+                            <td><code>query_embedding, top_k</code></td>
+                            <td><code>List[Tuple]</code></td>
+                            <td>Similarity search</td>
+                        </tr>
+                        <tr>
+                            <td><code>OptimizedReranker</code></td>
+                            <td><code>rerank()</code></td>
+                            <td><code>query, documents</code></td>
+                            <td><code>List[Tuple]</code></td>
+                            <td>BGE reranking with cache</td>
+                        </tr>
+                        <tr>
+                            <td><code>OptimizedRAGSystem</code></td>
+                            <td><code>process_query()</code></td>
+                            <td><code>query: str</code></td>
+                            <td><code>Dict</code></td>
+                            <td>End-to-end processing</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h2>🔧 config.py - Configuration Management</h2>
+                <div class="tech-grid">
+                    <div class="tech-item">
+                        <div class="tech-name">check_cuda_available()</div>
+                        <div class="tech-description">Detect GPU availability</div>
+                    </div>
+                    <div class="tech-item">
+                        <div class="tech-name">get_device_info()</div>
+                        <div class="tech-description">GPU/RAM information</div>
+                    </div>
+                    <div class="tech-item">
+                        <div class="tech-name">RAGConfig.from_env()</div>
+                        <div class="tech-description">Load from environment variables</div>
+                    </div>
+                    <div class="tech-item">
+                        <div class="tech-name">setup_logging()</div>
+                        <div class="tech-description">Configure logging system</div>
+                    </div>
+                </div>
+
+                <h2>🗄️ model_manager.py - LLM Management</h2>
+                <div class="tech-grid">
+                    <div class="tech-item">
+                        <div class="tech-name">get_available_models()</div>
+                        <div class="tech-description">List installable models</div>
+                    </div>
+                    <div class="tech-item">
+                        <div class="tech-name">install_model()</div>
+                        <div class="tech-description">Pull model via Ollama</div>
+                    </div>
+                    <div class="tech-item">
+                        <div class="tech-name">test_model()</div>
+                        <div class="tech-description">Test model with sample</div>
+                    </div>
+                    <div class="tech-item">
+                        <div class="tech-name">remove_model()</div>
+                        <div class="tech-description">Delete model from system</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 7: Document Processing Pipeline -->
+        <div class="slide-container" id="slide7">
+            <div class="slide-header">
+                <div class="slide-number">SLIDE 7</div>
+                <div class="slide-title">Document Processing Pipeline</div>
+                <div class="slide-subtitle">From Upload to Index</div>
+            </div>
+            <div class="slide-content">
+                <div class="workflow">
+                    <div class="step">
+                        <div class="step-number">📤</div>
+                        <div class="step-content">
+                            <div class="step-title">Upload Phase</div>
+                            <p>User uploads documents to <code>RAG_Logic/data/documents/</code></p>
+                            <p>Supported formats: .pdf, .docx, .txt, .html, .csv, .json</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">📄</div>
+                        <div class="step-content">
+                            <div class="step-title">Extraction Phase (loader.py)</div>
+                            <div class="tech-grid">
+                                <div class="tech-item">
+                                    <div class="tech-name">PDF</div>
+                                    <div class="tech-description">pdfplumber for text extraction</div>
+                                </div>
+                                <div class="tech-item">
+                                    <div class="tech-name">DOCX</div>
+                                    <div class="tech-description">python-docx for document parsing</div>
+                                </div>
+                                <div class="tech-item">
+                                    <div class="tech-name">TXT</div>
+                                    <div class="tech-description">Direct file reading</div>
+                                </div>
+                                <div class="tech-item">
+                                    <div class="tech-name">HTML</div>
+                                    <div class="tech-description">BeautifulSoup for parsing</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">✂️</div>
+                        <div class="step-content">
+                            <div class="step-title">Chunking Phase (chunking.py)</div>
+                            <p>Parameters: <code>chunk_size=400, overlap=50</code></p>
+                            <pre><code>Chunk 1: "Machine learning is a subset of AI. It enables systems..."
+────────────────────────────────────────────────────────────────────
+Chunk 2: "...systems to learn from data. This is called..."
+────────────────────────────────────────────────────────────────────
+Chunk 3: "...called supervised learning. Another type is..."</code></pre>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">🧮</div>
+                        <div class="step-content">
+                            <div class="step-title">Embedding Phase (embedding.py)</div>
+                            <pre><code>for chunk in chunks:
+    embedding = model.encode(chunk)  # 384-dim vector
+    cache.set(hash(chunk), embedding)  # Cache for reuse</code></pre>
+                            <p>Output: embeddings array (n_chunks × embedding_dim)</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">💾</div>
+                        <div class="step-content">
+                            <div class="step-title">Indexing Phase (vectordb.py)</div>
+                            <ul>
+                                <li>Build FAISS index from embeddings</li>
+                                <li>Save to <code>RAG_Logic/data/DBVectorial/vector_index.pkl</code></li>
+                                <li>Build BM25 index for keyword search</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 8: Experimentation & Optimization Flow -->
+        <div class="slide-container" id="slide8">
+            <div class="slide-header">
+                <div class="slide-number">SLIDE 8</div>
+                <div class="slide-title">Experimentation & Optimization Flow</div>
+                <div class="slide-subtitle">Automated Performance Tuning</div>
+            </div>
+            <div class="slide-content">
+                <div class="workflow">
+                    <div class="step">
+                        <div class="step-number">🚀</div>
+                        <div class="step-content">
+                            <div class="step-title">Start Experiment</div>
+                            <p>Execute <code>run_experiments_comprehensive.py</code></p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">📊</div>
+                        <div class="step-content">
+                            <div class="step-title">Load Evaluation Dataset</div>
+                            <p><code>comprehensive_evaluation.json</code> contains questions + expected answers + keywords</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">⚙️</div>
+                        <div class="step-content">
+                            <div class="step-title">Define Parameter Grid</div>
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Parameter</th>
+                                        <th>Values to Test</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>chunk_size</td>
+                                        <td>[200, 400, 600, 800]</td>
+                                    </tr>
+                                    <tr>
+                                        <td>overlap</td>
+                                        <td>[0, 50, 100]</td>
+                                    </tr>
+                                    <tr>
+                                        <td>top_k</td>
+                                        <td>[3, 5, 10, 15]</td>
+                                    </tr>
+                                    <tr>
+                                        <td>vector_weight</td>
+                                        <td>[0.3, 0.5, 0.7]</td>
+                                    </tr>
+                                    <tr>
+                                        <td>keyword_weight</td>
+                                        <td>[0.3, 0.5, 0.7]</td>
+                                    </tr>
+                                    <tr>
+                                        <td>rerank_enabled</td>
+                                        <td>[True, False]</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">🔄</div>
+                        <div class="step-content">
+                            <div class="step-title">For Each Configuration</div>
+                            <ol>
+                                <li>Re-index documents with new chunking parameters</li>
+                                <li>For each evaluation question:
+                                    <ul>
+                                        <li>Retrieve documents using current retrieval config</li>
+                                        <li>Generate answer using LLM</li>
+                                        <li>Compare with expected answer</li>
+                                        <li>Calculate metrics: accuracy, semantic similarity, precision/recall</li>
+                                    </ul>
+                                </li>
+                                <li>Aggregate scores across all questions</li>
+                            </ol>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">📈</div>
+                        <div class="step-content">
+                            <div class="step-title">Analyze Results</div>
+                            <pre><code>config_id: chunk400_overlap50_top5
+accuracy: 0.89
+semantic_similarity: 0.92
+retrieval_precision: 0.85
+retrieval_recall: 0.81
+avg_latency: 1.2s
+
+Best Configuration:
+chunk_size=400, overlap=50, top_k=5, rerank=True</code></pre>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">💾</div>
+                        <div class="step-content">
+                            <div class="step-title">Save Results & Update System</div>
+                            <ul>
+                                <li>Save to <code>RAG_Logic/results/summary.json</code></li>
+                                <li>Update RAGConfig with best parameters</li>
+                                <li>Optionally re-index with optimal settings</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 9: API Endpoints & Data Flow -->
+        <div class="slide-container" id="slide9">
+            <div class="slide-header">
+                <div class="slide-number">SLIDE 9</div>
+                <div class="slide-title">API Endpoints & Data Flow</div>
+                <div class="slide-subtitle">FastAPI REST Interface</div>
+            </div>
+            <div class="slide-content">
+                <div class="workflow">
+                    <div class="step">
+                        <div class="step-number">POST</div>
+                        <div class="step-content">
+                            <div class="step-title">/query</div>
+                            <p><strong>Request:</strong> <code>{"query": "What is AI?", "model": "llama3"}</code></p>
+                            <p><strong>Response:</strong></p>
+                            <pre><code>{
+  "answer": "...",
+  "sources": [...],
+  "confidence": 0.92,
+  "retrieval_time": 0.45,
+  "generation_time": 1.23
+}</code></pre>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">POST</div>
+                        <div class="step-content">
+                            <div class="step-title">/documents/upload</div>
+                            <p><strong>Request:</strong> multipart/form-data with file</p>
+                            <p><strong>Response:</strong></p>
+                            <pre><code>{
+  "message": "Document uploaded successfully",
+  "filename": "doc.pdf",
+  "chunks": 42,
+  "index_updated": true
+}</code></pre>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">POST</div>
+                        <div class="step-content">
+                            <div class="step-title">/experiments/start</div>
+                            <p><strong>Request:</strong> <code>{"dataset": "comprehensive", "iterations": 100}</code></p>
+                            <p><strong>Response:</strong></p>
+                            <pre><code>{
+  "experiment_id": "exp_20240101_120000",
+  "status": "running",
+  "estimated_time": 300
+}</code></pre>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">GET</div>
+                        <div class="step-content">
+                            <div class="step-title">/experiments/{id}/status</div>
+                            <p><strong>Response:</strong></p>
+                            <pre><code>{
+  "status": "completed",
+  "best_config": {...},
+  "results_url": "/results/summary.json"
+}</code></pre>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">GET</div>
+                        <div class="step-content">
+                            <div class="step-title">/models/available</div>
+                            <p><strong>Response:</strong></p>
+                            <pre><code>{
+  "local": ["llama3", "mistral", "mixtral"],
+  "cloud": ["gpt-3.5-turbo", "gpt-4"]
+}</code></pre>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">POST</div>
+                        <div class="step-content">
+                            <div class="step-title">/config/save-index</div>
+                            <p><strong>Request:</strong> <code>{"force_rebuild": false}</code></p>
+                            <p><strong>Response:</strong></p>
+                            <pre><code>{
+  "saved": true,
+  "path": "RAG_Logic/data/DBVectorial/vector_index.pkl"
+}</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 10: Data Storage Structure -->
+        <div class="slide-container" id="slide10">
+            <div class="slide-header">
+                <div class="slide-number">SLIDE 10</div>
+                <div class="slide-title">Data Storage Structure</div>
+                <div class="slide-subtitle">File Organization Layout</div>
+            </div>
+            <div class="slide-content">
+                <div class="diagram-container">
+                    <div class="diagram">AUTO_RAG/
+│
+├── RAG_Logic/
+│   │
+│   ├── data/
+│   │   ├── documents/            # User-uploaded source files
+│   │   │   ├── doc1.pdf
+│   │   │   ├── doc2.docx
+│   │   │   └── article.txt
+│   │   │
+│   │   ├── DBVectorial/           # Persistent vector database
+│   │   │   ├── vector_index.pkl   # FAISS index + embeddings
+│   │   │   ├── chunks.pkl         # Text chunks + metadata
+│   │   │   └── metadata.json      # Index metadata
+│   │   │
+│   │   └── evaluation/            # Evaluation datasets
+│   │       ├── sample_evaluation.json      # 10 basic questions
+│   │       └── comprehensive_evaluation.json # 100+ advanced questions
+│   │
+│   ├── cache/                      # Embedding cache
+│   │   ├── embeddings/             # Cached embeddings by hash
+│   │   └── rerank/                 # Cached reranking results
+│   │
+│   ├── logs/                       # System logs
+│   │   ├── rag.log                 # Main application log
+│   │   └── experiments.log         # Experiment execution logs
+│   │
+│   └── results/                    # Experiment results
+│       ├── summary.json            # Best configuration summary
+│       ├── experiment_20240101.json # Detailed experiment results
+│       └── metrics.csv             # Performance metrics over time
+│
+└── frontend/                       # React web interface
+    ├── src/                         # Source code
+    ├── public/                      # Static assets
+    └── build/                       # Production build</div>
+                </div>
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">📁</div>
+                        <div class="feature-title">Documents</div>
+                        <p>User-uploaded source files in various formats</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🗄️</div>
+                        <div class="feature-title">Vector Database</div>
+                        <p>FAISS index with embeddings and metadata</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">⚡</div>
+                        <div class="feature-title">Cache</div>
+                        <p>Embedding and reranking caches for performance</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">📊</div>
+                        <div class="feature-title">Results</div>
+                        <p>Experiment results and performance metrics</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 11: Performance & Caching Architecture -->
+        <div class="slide-container" id="slide11">
+            <div class="slide-header">
+                <div class="slide-number">SLIDE 11</div>
+                <div class="slide-title">Performance & Caching Architecture</div>
+                <div class="slide-subtitle">Multi-Layer Optimization</div>
+            </div>
+            <div class="slide-content">
+                <div class="workflow">
+                    <div class="step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <div class="step-title">Layer 1: Embedding Cache</div>
+                            <p><strong>Key:</strong> hash(text_chunk)</p>
+                            <p><strong>Value:</strong> embedding (np.ndarray)</p>
+                            <p><strong>TTL:</strong> 7 days (configurable)</p>
+                            <p><strong>Storage:</strong> File-based (pickle)</p>
+                            <p><strong>Hit Rate:</strong> Typically 60-80% after warmup</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <div class="step-title">Layer 2: Reranking Cache</div>
+                            <p><strong>Key:</strong> hash(query + document_text)</p>
+                            <p><strong>Value:</strong> relevance_score (float)</p>
+                            <p><strong>TTL:</strong> 24 hours</p>
+                            <p><strong>Storage:</strong> Memory + File</p>
+                            <p><strong>Benefit:</strong> Avoids expensive cross-encoder inference</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <div class="step-title">Layer 3: Vector Index Persistence</div>
+                            <p><strong>Startup:</strong> Load index from DBVectorial/vector_index.pkl</p>
+                            <p><strong>Runtime:</strong> In-memory FAISS index for fast search</p>
+                            <p><strong>On Change:</strong> Save updated index to disk</p>
+                            <p><strong>Benefit:</strong> 10-100x faster startup time</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">4</div>
+                        <div class="step-content">
+                            <div class="step-title">Layer 4: Model Lazy Loading</div>
+                            <p>Models only loaded when first needed</p>
+                            <p>Singleton pattern per model type</p>
+                            <p>GPU memory optimization through shared instances</p>
+                            <p><strong>Benefit:</strong> Reduced memory footprint, faster startup</p>
+                        </div>
+                    </div>
+                </div>
+
+                <h2>Performance Metrics</h2>
+                <div class="tech-grid">
+                    <div class="tech-item">
+                        <div class="tech-name">Query Latency</div>
+                        <div class="tech-description">Average, p95, p99 response times</div>
+                    </div>
+                    <div class="tech-item">
+                        <div class="tech-name">Cache Hit Rates</div>
+                        <div class="tech-description">Embedding and reranking cache efficiency</div>
+                    </div>
+                    <div class="tech-item">
+                        <div class="tech-name">GPU Memory Usage</div>
+                        <div class="tech-description">Memory consumption monitoring</div>
+                    </div>
+                    <div class="tech-item">
+                        <div class="tech-name">Error Rates</div>
+                        <div class="tech-description">System reliability tracking</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 12: Technology Stack -->
+        <div class="slide-container" id="slide12">
+            <div class="slide-header">
+                <div class="slide-number">SLIDE 12</div>
+                <div class="slide-title">Technology Stack</div>
+                <div class="slide-subtitle">Complete Technology Overview</div>
+            </div>
+            <div class="slide-content">
+                <h2>🐍 Backend (Python)</h2>
+                <div class="tech-grid">
+                    <div class="tech-item">
+                        <div class="tech-name">FastAPI, Uvicorn</div>
+                        <div class="tech-description">Web framework and server</div>
+                    </div>
+                    <div class="tech-item">
+                        <div class="tech-name">PyTorch, Transformers</div>
+                        <div class="tech-description">Machine learning frameworks</div>
+                    </div>
+                    <div class="tech-item">
+                        <div class="tech-name">FAISS, NumPy</div>
+                        <div class="tech-description">Vector search and computing</div>
+                    </div>
+                    <div class="tech-item">
+                        <div class="tech-name">PDFPlumber, Python-Docx</div>
+                        <div class="tech-description">Document processing</div>
+                    </div>
+                    <div class="tech-item">
+                        <div class="tech-name">Rank-BM25</div>
+                        <div class="tech-description">Keyword search algorithm</div>
+                    </div>
+                    <div class="tech-item">
+                        <div class="tech-name">Ollama, OpenAI API</div>
+                        <div class="tech-description">LLM integration</div>
+                    </div>
+                </div>
+
+                <h2>⚛️ Frontend (React/TypeScript)</h2>
+                <div class="tech-grid">
+                    <div class="tech-item">
+                        <div class="tech-name">React 18, TypeScript</div>
+                        <div class="tech-description">UI framework and type safety</div>
+                    </div>
+                    <div class="tech-item">
+                        <div class="tech-name">Tailwind CSS</div>
+                        <div class="tech-description">Utility-first CSS framework</div>
+                    </div>
+                    <div class="tech-item">
+                        <div class="tech-name">Axios</div>
+                        <div class="tech-description">HTTP client library</div>
+                    </div>
+                    <div class="tech-item">
+                        <div class="tech-name">Lucide React</div>
+                        <div class="tech-description">Icon library</div>
+                    </div>
+                </div>
+
+                <h2>🤖 Models & Embeddings</h2>
+                <div class="tech-grid">
+                    <div class="tech-item">
+                        <div class="tech-name">all-MiniLM-L12-v2</div>
+                        <div class="tech-description">Default embedding model</div>
+                    </div>
+                    <div class="tech-item">
+                        <div class="tech-name">BGE Reranker</div>
+                        <div class="tech-description">Document reranking</div>
+                    </div>
+                    <div class="tech-item">
+                        <div class="tech-name">Llama3, Mistral, Mixtral</div>
+                        <div class="tech-description">Local LLM options</div>
+                    </div>
+                    <div class="tech-item">
+                        <div class="tech-name">GPT-3.5, GPT-4</div>
+                        <div class="tech-description">Cloud LLM options</div>
+                    </div>
+                </div>
+
+                <h2>🚀 Deployment</h2>
+                <div class="tech-grid">
+                    <div class="tech-item">
+                        <div class="tech-name">Python 3.9+, Node.js 18+</div>
+                        <div class="tech-description">Runtime requirements</div>
+                    </div>
+                    <div class="tech-item">
+                        <div class="tech-name">CPU (minimum), GPU (recommended)</div>
+                        <div class="tech-description">Hardware requirements</div>
+                    </div>
+                    <div class="tech-item">
+                        <div class="tech-name">Ports: 8000, 3000, 11434</div>
+                        <div class="tech-description">Network ports</div>
+                    </div>
+                    <div class="tech-item">
+                        <div class="tech-name">Linux, macOS, Windows (WSL2)</div>
+                        <div class="tech-description">Supported platforms</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 13: Getting Started & Commands -->
+        <div class="slide-container" id="slide13">
+            <div class="slide-header">
+                <div class="slide-number">SLIDE 13</div>
+                <div class="slide-title">Getting Started & Commands</div>
+                <div class="slide-subtitle">Quick Start Guide</div>
+            </div>
+            <div class="slide-content">
+                <h2>📦 Installation</h2>
+                <pre><code># Clone repository
+git clone https://github.com/yourusername/AUTO_RAG.git
+cd AUTO_RAG
+
+# Install Python dependencies
+pip install -r requirements.txt
+
+# Install frontend dependencies
+cd frontend && npm install && cd ..
+
+# Install Ollama (optional, for local LLMs)
+curl -fsSL https://ollama.com/install.sh | sh
+ollama pull llama3</code></pre>
+
+                <h2>🚀 Running the System</h2>
+                <pre><code># Start API server (Terminal 1)
+python main_api.py
+
+# Start frontend (Terminal 2)
+cd frontend && npm start
+
+# OR use CLI mode
+python cli_optimized.py</code></pre>
+
+                <h2>⚡ Common Commands</h2>
+                <pre><code># Run experiments
+python run_experiments_comprehensive.py
+
+# Manage models
+python model_manager.py list
+python model_manager.py install llama3
+python model_manager.py test llama3
+
+# Check system status
+curl http://localhost:8000/docs
+
+# Quick query test
+curl -X POST http://localhost:8000/query \
+  -H "Content-Type: application/json" \
+  -d '{"query": "What is RAG?"}'</code></pre>
+
+                <h2>🔧 Environment Variables</h2>
+                <pre><code>export RAG_EMBEDDING_MODEL="sentence-transformers/all-MiniLM-L12-v2"
+export RAG_OLLAMA_MODEL="llama3"
+export RAG_CHUNK_SIZE=400
+export RAG_OVERLAP=50
+export RAG_TOP_K=5
+export RAG_LOG_LEVEL=INFO
+export RAG_FORCE_CPU=false</code></pre>
+            </div>
+        </div>
+
+        <!-- SLIDE 14: Summary & Key Takeaways -->
+        <div class="slide-container" id="slide14">
+            <div class="slide-header">
+                <div class="slide-number">SLIDE 14</div>
+                <div class="slide-title">Summary & Key Takeaways</div>
+                <div class="slide-subtitle">Project Highlights</div>
+            </div>
+            <div class="slide-content">
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">✅</div>
+                        <div class="feature-title">Complete RAG Solution</div>
+                        <ul>
+                            <li>End-to-end system from document upload to answer generation</li>
+                            <li>Production-ready with FastAPI and React frontend</li>
+                        </ul>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">✅</div>
+                        <div class="feature-title">Hybrid Retrieval</div>
+                        <ul>
+                            <li>Combines vector similarity (semantic) + BM25 (keyword)</li>
+                            <li>Reciprocal Rank Fusion for optimal combination</li>
+                            <li>BGE reranking for improved relevance</li>
+                        </ul>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">✅</div>
+                        <div class="feature-title">Automated Optimization</div>
+                        <ul>
+                            <li>Self-tuning through comprehensive experiments</li>
+                            <li>Parameter grid search for chunking, retrieval, fusion</li>
+                            <li>Automatic best configuration detection and loading</li>
+                        </ul>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">✅</div>
+                        <div class="feature-title">Performance Optimized</div>
+                        <ul>
+                            <li>Multi-layer caching (embeddings, reranking)</li>
+                            <li>Vector database persistence for instant startup</li>
+                            <li>Lazy model loading to save memory</li>
+                        </ul>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">✅</div>
+                        <div class="feature-title">Flexible Model Support</div>
+                        <ul>
+                            <li>Local models via Ollama (Llama3, Mistral, Mixtral)</li>
+                            <li>Cloud models via OpenAI API (GPT-3.5, GPT-4)</li>
+                            <li>Switch models at runtime</li>
+                        </ul>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">✅</div>
+                        <div class="feature-title">Comprehensive Monitoring</div>
+                        <ul>
+                            <li>Performance metrics tracking</li>
+                            <li>Cache hit rate monitoring</li>
+                            <li>Confidence scoring and error tracking</li>
+                        </ul>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">✅</div>
+                        <div class="feature-title">User-Friendly Interfaces</div>
+                        <ul>
+                            <li>Modern React dashboard</li>
+                            <li>Interactive CLI for power users</li>
+                            <li>RESTful API for integration</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div style="text-align: center; margin-top: 3rem;">
+                    <h2>🎉 END OF PRESENTATION</h2>
+                    <p style="font-size: 1.2rem; color: var(--text-secondary); margin-top: 1rem;">
+                        Thank you for exploring AUTO_RAG - Autonomous Retrieval-Augmented Generation System
+                    </p>
+                    <div style="margin-top: 2rem;">
+                        <button class="btn" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">
+                            <i class="fas fa-arrow-up"></i> Back to Top
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <div class="footer-links">
+                <a href="#slide1">Title</a>
+                <a href="#slide2">Overview</a>
+                <a href="#slide3">Architecture</a>
+                <a href="#slide14">Summary</a>
+            </div>
+            <p>&copy; 2024 AUTO_RAG Project. Intelligent Document Q&A with Automated Optimization.</p>
+        </div>
+    </footer>
+
+    <!-- Scroll to Top Button -->
+    <div class="scroll-to-top" id="scrollToTop">
+        <i class="fas fa-arrow-up"></i>
+    </div>
+
+    <script>
+        // Mobile menu toggle
+        const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+        const navLinks = document.getElementById('navLinks');
+        
+        mobileMenuToggle.addEventListener('click', () => {
+            navLinks.classList.toggle('active');
+            const icon = mobileMenuToggle.querySelector('i');
+            icon.classList.toggle('fa-bars');
+            icon.classList.toggle('fa-times');
+        });
+
+        // Close mobile menu when clicking on a link
+        document.querySelectorAll('.nav-links a').forEach(link => {
+            link.addEventListener('click', () => {
+                navLinks.classList.remove('active');
+                const icon = mobileMenuToggle.querySelector('i');
+                icon.classList.add('fa-bars');
+                icon.classList.remove('fa-times');
+            });
+        });
+
+        // Navbar scroll effect
+        const navbar = document.getElementById('navbar');
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 50) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+
+        // Scroll to top button
+        const scrollToTop = document.getElementById('scrollToTop');
+        
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 300) {
+                scrollToTop.classList.add('visible');
+            } else {
+                scrollToTop.classList.remove('visible');
+            }
+        });
+
+        scrollToTop.addEventListener('click', () => {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        });
+
+        // Smooth scrolling for navigation links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    const offsetTop = target.offsetTop - 100; // Account for fixed navbar
+                    window.scrollTo({
+                        top: offsetTop,
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+
+        // Intersection Observer for slide animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+
+        // Observe all slide containers
+        document.querySelectorAll('.slide-container').forEach(slide => {
+            slide.style.opacity = '0';
+            slide.style.transform = 'translateY(30px)';
+            slide.style.transition = 'opacity 0.6s ease-out, transform 0.6s ease-out';
+            observer.observe(slide);
+        });
+
+        // Highlight current section in navigation
+        const sections = document.querySelectorAll('.slide-container');
+        const navItems = document.querySelectorAll('.nav-links a[href^="#"]');
+
+        window.addEventListener('scroll', () => {
+            let current = '';
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop - 150;
+                if (window.scrollY >= sectionTop) {
+                    current = section.getAttribute('id');
+                }
+            });
+
+            navItems.forEach(item => {
+                item.classList.remove('active');
+                if (item.getAttribute('href') === `#${current}`) {
+                    item.classList.add('active');
+                }
+            });
+        });
+
+        // Add keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                e.preventDefault();
+                const currentSlide = Math.floor(window.scrollY / window.innerHeight);
+                const totalSlides = sections.length;
+                
+                if (e.key === 'ArrowUp' && currentSlide > 0) {
+                    sections[currentSlide - 1].scrollIntoView({ behavior: 'smooth' });
+                } else if (e.key === 'ArrowDown' && currentSlide < totalSlides - 1) {
+                    sections[currentSlide + 1].scrollIntoView({ behavior: 'smooth' });
+                }
+            }
+        });
+
+        // Add print functionality
+        function printPresentation() {
+            window.print();
+        }
+
+        // Add fullscreen functionality
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+
+        // Add copy code functionality
+        document.querySelectorAll('pre code').forEach(codeBlock => {
+            const button = document.createElement('button');
+            button.className = 'copy-code-btn';
+            button.innerHTML = '<i class="fas fa-copy"></i>';
+            button.style.cssText = `
+                position: absolute;
+                top: 10px;
+                right: 10px;
+                background: rgba(255, 255, 255, 0.1);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                color: white;
+                padding: 5px 10px;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 12px;
+                transition: all 0.3s ease;
+            `;
+            
+            button.addEventListener('click', () => {
+                navigator.clipboard.writeText(codeBlock.textContent);
+                button.innerHTML = '<i class="fas fa-check"></i>';
+                setTimeout(() => {
+                    button.innerHTML = '<i class="fas fa-copy"></i>';
+                }, 2000);
+            });
+            
+            button.addEventListener('mouseenter', () => {
+                button.style.background = 'rgba(255, 255, 255, 0.2)';
+            });
+            
+            button.addEventListener('mouseleave', () => {
+                button.style.background = 'rgba(255, 255, 255, 0.1)';
+            });
+            
+            codeBlock.parentElement.style.position = 'relative';
+            codeBlock.parentElement.appendChild(button);
+        });
+
+        // Add search functionality (optional enhancement)
+        function addSearchFunctionality() {
+            const searchInput = document.createElement('input');
+            searchInput.type = 'text';
+            searchInput.placeholder = 'Search slides...';
+            searchInput.style.cssText = `
+                position: fixed;
+                top: 100px;
+                right: 20px;
+                padding: 10px 15px;
+                border: 1px solid #e5e7eb;
+                border-radius: 8px;
+                background: white;
+                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+                z-index: 999;
+                width: 250px;
+                font-size: 14px;
+            `;
+            
+            document.body.appendChild(searchInput);
+            
+            searchInput.addEventListener('input', (e) => {
+                const searchTerm = e.target.value.toLowerCase();
+                sections.forEach(section => {
+                    const content = section.textContent.toLowerCase();
+                    if (content.includes(searchTerm) || searchTerm === '') {
+                        section.style.display = 'block';
+                    } else {
+                        section.style.display = 'none';
+                    }
+                });
+            });
+        }
+
+        // Initialize search functionality
+        // addSearchFunctionality(); // Uncomment to enable search
+
+        console.log('AUTO_RAG Presentation loaded successfully! 🚀');
+    </script>
+</body>
+</html>
